@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:24-cli'   // ephemeral Docker container
+        }
+    }
     
     tools {
         nodejs 'NodeJS-16'
