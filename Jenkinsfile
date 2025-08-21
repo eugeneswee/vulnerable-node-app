@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:24-dind'
-            args '--privileged'  // required for DinD
-        }
-    }
+    agent any
     
     tools {
         nodejs 'NodeJS-16'
