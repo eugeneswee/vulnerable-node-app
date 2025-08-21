@@ -1,8 +1,8 @@
 pipeline {
     agent {
         docker {
-            image 'docker:24-cli'   // ephemeral Docker container
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // optional if you want host access
+            image 'docker:24-dind'
+            args '--privileged'  // required for DinD
         }
     }
     
