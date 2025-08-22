@@ -138,3 +138,52 @@ app.listen(port, () => {
 });
 
 module.exports = app;
+
+// This code will trigger quality issues
+function duplicateFunction() {
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    return "duplicate";
+}
+
+function duplicateFunction2() {
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    console.log("This is duplicate code");
+    return "duplicate";
+}
+
+// Complex function to trigger maintainability issues
+function complexFunction(a, b, c, d, e, f, g, h, i, j) {
+    if (a > b) {
+        if (c > d) {
+            if (e > f) {
+                if (g > h) {
+                    if (i > j) {
+                        return a + b + c + d + e + f + g + h + i + j;
+                    } else {
+                        return a - b - c - d - e - f - g - h - i - j;
+                    }
+                } else {
+                    return a * b * c * d * e * f * g * h * i * j;
+                }
+            } else {
+                return a / b / c / d / e / f / g / h / i / j;
+            }
+        } else {
+            return Math.pow(a, b);
+        }
+    } else {
+        return 0;
+    }
+}
+
+// Unused variables to trigger code smells
+var unusedVariable1 = "this is unused";
+var unusedVariable2 = "this is also unused";
+var unusedVariable3 = "another unused variable";
