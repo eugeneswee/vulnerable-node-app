@@ -68,7 +68,9 @@ pipeline {
                             -Dsonar.exclusions=node_modules/**,coverage/**,*.log \
                             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
                             -Dsonar.projectVersion=${BUILD_NUMBER} \
-                            -Dsonar.buildString=${BUILD_NUMBER}
+                            -Dsonar.buildString=${BUILD_NUMBER} \
+                            -Dsonar.qualitygate.wait=true \
+                            -Dsonar.scm.disabled=true
                         """
                     }
                     
@@ -89,14 +91,29 @@ pipeline {
                         def qg = waitForQualityGate()
                         
                         echo "Quality Gate Status: ${qg.status}"
+                        
                         if (qg.status != 'OK') {
-                          echo "❌ Quality Gate failed with status: ${qg.status}"
-                          // The conditions API no longer exists in recent plugin versions,
-                          // so we can't print detailed failed metrics here.
-                          echo "🔍 Review detailed issues at: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
-                          error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                            echo "❌ Quality Gate failed with status: ${qg.status}"
+                            echo "Quality Gate conditions that failed:"
+                            
+                            // Handle different plugin versions - conditions property may not exist
+                            try {
+                                if (qg.conditions) {
+                                    qg.conditions.each { condition ->
+                                        echo "- ${condition.metricKey}: ${condition.actualValue} (threshold: ${condition.errorThreshold})"
+                                    }
+                                } else {
+                                    echo "- Detailed condition information not available in this plugin version"
+                                }
+                            } catch (Exception e) {
+                                echo "- Could not retrieve detailed condition information"
+                                echo "- Plugin version may not support condition details"
+                            }
+                            
+                            echo "🔍 Review quality issues at: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
                         } else {
-                          echo "✅ Quality Gate passed successfully!"
+                            echo "✅ Quality Gate passed successfully!"
                         }
                     }
                 }
@@ -107,7 +124,6 @@ pipeline {
             when {
                 expression { 
                     echo "Checking if should build Docker image..."
-                    echo "Current build result: ${currentBuild.result}"
                     return currentBuild.result == null || currentBuild.result == 'SUCCESS' 
                 }
             }
@@ -153,7 +169,6 @@ pipeline {
     post {
         always {
             echo '=== POST-BUILD: Cleanup ==='
-            // Clean workspace but preserve important files
             sh 'rm -rf node_modules/ || true'
             sh 'rm -rf .scannerwork/ || true'
         }
@@ -182,29 +197,6 @@ pipeline {
                 echo "   - Hardcoded credentials"
                 echo "   - Cross-Site Scripting (XSS)"
                 echo "   - Path traversal vulnerabilities"
-                
-                // Send notification (if email configured)
-                try {
-                    emailext (
-                        subject: "🚨 Security Pipeline Failed: ${env.JOB_NAME} - Build ${env.BUILD_NUMBER}",
-                        body: """
-                        The security analysis pipeline has failed due to detected vulnerabilities.
-                        
-                        Job: ${env.JOB_NAME}
-                        Build Number: ${env.BUILD_NUMBER}
-                        Build URL: ${env.BUILD_URL}
-                        
-                        Please review the security analysis results:
-                        ${sonarUrl}
-                        
-                        This is expected behavior for the vulnerable demo application.
-                        The pipeline will pass once security issues are remediated in Lab 4.
-                        """,
-                        to: "\${DEFAULT_RECIPIENTS}"
-                    )
-                } catch (Exception e) {
-                    echo "Email notification not configured: ${e.message}"
-                }
             }
         }
         unstable {
