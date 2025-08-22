@@ -89,19 +89,14 @@ pipeline {
                         def qg = waitForQualityGate()
                         
                         echo "Quality Gate Status: ${qg.status}"
-                        
                         if (qg.status != 'OK') {
-                            echo "❌ Quality Gate failed with status: ${qg.status}"
-                            echo "Quality Gate conditions that failed:"
-                            if (qg.conditions) {
-                                qg.conditions.each { condition ->
-                                    echo "- ${condition.metricKey}: ${condition.actualValue} (threshold: ${condition.errorThreshold})"
-                                }
-                            }
-                            echo "🔍 Review security issues at: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
-                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                          echo "❌ Quality Gate failed with status: ${qg.status}"
+                          // The conditions API no longer exists in recent plugin versions,
+                          // so we can't print detailed failed metrics here.
+                          echo "🔍 Review detailed issues at: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
+                          error "Pipeline aborted due to quality gate failure: ${qg.status}"
                         } else {
-                            echo "✅ Quality Gate passed successfully!"
+                          echo "✅ Quality Gate passed successfully!"
                         }
                     }
                 }
